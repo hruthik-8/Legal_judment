@@ -1,0 +1,11 @@
+torch
+transformers>=4.44.0
+datasets
+pandas
+numpy
+scikit-learn
+tqdm
+fastapi
+uvicorn[standard]
+captum
+sentence-transformers
