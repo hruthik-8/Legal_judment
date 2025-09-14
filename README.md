@@ -1,40 +1,49 @@
 # Legal Judgment Prediction System
 
-A production-ready AI system for predicting legal judgments in both civil and criminal cases using deep learning and natural language processing.
+An AI system for predicting legal judgments in civil and criminal cases using deep learning and natural language processing with transformer models.
 
 ## 📋 Features
 
 - **Dual-Model Architecture**: Separate models for civil and criminal cases
-- **Multi-task Learning**: Simultaneous prediction of charges, applicable articles, and penalties
-- **High Accuracy**: State-of-the-art transformer models fine-tuned on legal texts
-- **RESTful API**: Easy integration with web and mobile applications
-- **Scalable**: Containerized deployment with Docker and Kubernetes support
+- **Multi-task Learning**: Simultaneous prediction of charges, applicable articles, and penalties for criminal cases
+- **Binary Classification**: Yes/No prediction for civil cases
+- **RESTful API**: FastAPI-based API for easy integration
+- **Web Interface**: Simple HTML frontend for testing predictions
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
 - Python 3.8+
-- CUDA-compatible GPU (recommended)
-- Docker (for containerized deployment)
+- CUDA-compatible GPU (recommended for training)
 
 ### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/legal-judgment-predictor.git
-   cd legal-judgment-predictor
-   ```
-
-2. Create and activate a virtual environment:
+1. Create and activate a virtual environment:
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   # On Windows:
+   venv\Scripts\activate
+   # On Linux/Mac:
+   source venv/bin/activate
    ```
 
-3. Install dependencies:
+2. Install dependencies:
    ```bash
    pip install -r requirements.txt
+   ```
+
+### Data Preparation
+
+1. Scrape data from Indian Kanoon:
+   ```bash
+   python download_indian_kanoon.py
+   ```
+   This will create `data/indian_kanoon_criminal_cases.csv` and `data/indian_kanoon_civil_cases.csv`.
+
+2. Explore the data:
+   ```bash
+   python explore_data.py
    ```
 
 ## 🏗️ Model Training
@@ -42,58 +51,35 @@ A production-ready AI system for predicting legal judgments in both civil and cr
 ### Criminal Case Model (Multi-task)
 ```bash
 python train_criminal.py \
-    --epochs 5 \
+    --epochs 3 \
     --batch 8 \
     --encoder nlpaueb/legal-bert-base-uncased \
-    --learning_rate 2e-5 \
+    --lr 2e-5 \
     --max_len 512
 ```
 
 ### Civil Case Model (Binary Classification)
 ```bash
 python train_civil.py \
-    --epochs 5 \
+    --epochs 3 \
     --batch 8 \
     --encoder nlpaueb/legal-bert-base-uncased \
-    --learning_rate 2e-5 \
+    --lr 2e-5 \
     --max_len 384
 ```
 
-## 🚀 Deployment
+## 🚀 Running the API
 
-### Option 1: Local Development Server
-
+Start the FastAPI server:
 ```bash
-uvicorn app:app --host 0.0.0.0 --port 7860 --reload
+python app.py
+```
+Or with uvicorn:
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### Option 2: Docker Deployment
-
-1. Build the Docker image:
-   ```bash
-   docker build -t legal-judgment-predictor .
-   ```
-
-2. Run the container:
-   ```bash
-   docker run -d \
-     --name judgment-predictor \
-     -p 7860:7860 \
-     -v $(pwd)/checkpoints:/app/checkpoints \
-     legal-judgment-predictor
-   ```
-
-### Option 3: Kubernetes Deployment
-
-1. Apply the Kubernetes configuration:
-   ```bash
-   kubectl apply -f k8s/
-   ```
-
-2. Access the service:
-   ```bash
-   kubectl port-forward svc/legal-judgment-predictor 7860:80
-   ```
+The API will be available at `http://localhost:8000`.
 
 ## 🌐 API Endpoints
 
@@ -103,8 +89,20 @@ POST /predict_criminal
 Content-Type: application/json
 
 {
-    "facts": "[Case facts text]",
+    "facts": "Case facts text here...",
     "article_threshold": 0.5
+}
+```
+
+Response:
+```json
+{
+    "charge": "Charge type",
+    "articles": [
+        {"article": "IPC Section 123", "score": 0.8},
+        ...
+    ],
+    "penalty_months": 12.5
 }
 ```
 
@@ -114,46 +112,68 @@ POST /predict_civil
 Content-Type: application/json
 
 {
-    "facts": "[Case facts]",
-    "plea": "[Defendant's plea]",
-    "law": "[Relevant law context]"
+    "facts": "Case facts...",
+    "plea": "Defendant's plea",
+    "law": "Relevant law context"
 }
 ```
 
-## 📊 Model Performance
+Response:
+```json
+{
+    "answer": "yes",
+    "probability": 0.75
+}
+```
 
-### Civil Model
-- Accuracy: 82%
-- F1-Score: 0.80
-- ROC-AUC: 0.87
+## 🖥️ Web Interface
 
-### Criminal Model
-- Charge Accuracy: 75%
-- Articles F1-Score: 0.70
-- Penalty MAE: 4.5 months
+Open `static/index.html` in your browser to test the API interactively.
 
-## 🛠️ Environment Variables
+## 📊 Model Testing
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MODEL_PATH` | `checkpoints/` | Path to model checkpoints |
-| `PORT` | `7860` | API server port |
-| `LOG_LEVEL` | `INFO` | Logging level |
-| `MAX_WORKERS` | `4` | Number of worker processes |
+Test the trained models:
+```bash
+python test_model.py
+```
+
+Or test individually:
+```bash
+python test_criminal.py
+python test_civil.py
+```
+
+## 📈 Visualization
+
+Generate training metric plots:
+```bash
+python visualize_metrics.py
+```
 
 ## 📂 Project Structure
 
 ```
 .
-├── app.py                # FastAPI application
-├── train_civil.py        # Civil case model training
-├── train_criminal.py     # Criminal case model training
-├── model_multitask.py    # Multi-task model architecture
-├── checkpoints/          # Model checkpoints and configs
-├── static/               # Frontend assets
-├── requirements.txt      # Python dependencies
-├── Dockerfile            # Container configuration
-└── k8s/                  # Kubernetes manifests
+├── app.py                    # FastAPI application
+├── train_criminal.py         # Criminal model training script
+├── train_civil.py            # Civil model training script
+├── model_multitask.py        # Multi-task model architecture
+├── test_criminal.py          # Criminal model testing
+├── test_civil.py             # Civil model testing
+├── test_model.py             # Combined model testing
+├── visualize_metrics.py      # Training metrics visualization
+├── download_indian_kanoon.py # Data scraping script
+├── explore_data.py           # Data exploration
+├── csvdat.py                 # CSV data inspection
+├── requirements.txt          # Python dependencies
+├── scraper_requirements.txt  # Scraping-specific dependencies
+├── static/
+│   └── index.html            # Web interface
+├── data/                     # Scraped datasets
+├── checkpoints/              # Model checkpoints and configs
+├── utils/
+│   └── common.py             # Shared utilities
+└── README.md
 ```
 
 ## 🤝 Contributing
@@ -166,9 +186,8 @@ Content-Type: application/json
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## 📧 Contact
 
-For questions or feedback, please contact [Your Name] at [your.email@example.com]
-- You can swap encoders (e.g., `bert-base-uncased`) for faster debugging.
+For questions or feedback, please open an issue on GitHub.
